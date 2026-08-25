@@ -1,7 +1,7 @@
 name: Provision Infrastructure
 
 on:
-  workflow_dispatch: # Equivale a "trigger: none" (ejecución manual)
+  workflow_dispatch: # "trigger: none"
 
 jobs:
   terraform-job:
@@ -12,8 +12,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 1. DevSecOps: Instalar e iterar Trivy Scan
-      - name: DevSecOps: Install Trivy
+      # DevSecOps: Install Trivy and scan
+      - name: DevSecOps Install Trivy
         run: |
           echo "===> Installing Trivy..."
           sudo apt-get install wget apt-transport-https gnupg lsb-release -y
@@ -21,7 +21,7 @@ jobs:
           echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/trivy.list
           sudo apt-get update -y && sudo apt-get install trivy -y
 
-      - name: DevSecOps: Trivy IaC Security Scan
+      - name: Trivy IaC Security Scan
         run: |
           echo "===> Downloading JUnit template & scanning Terraform..."
           curl -sSL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/junit.tpl -o junit.tpl
@@ -34,27 +34,27 @@ jobs:
             --skip-version-check \
             --severity HIGH,CRITICAL
 
-      # 2. Publicar reporte en GitHub Actions
+      # Publish report on GitHub Actions
       - name: Publish Security IaC Report
         uses: mikepenz/action-junit-report@v4
-        if: always() # Se ejecuta siempre, como condition: always()
+        if: always()
         with:
           report_paths: 'trivy-iac-results.xml'
           require_tests: true
 
-      # 3. Autenticación en Azure (Sustituye a Service Connection)
+      # Authentication on Azure
       - name: Azure Login
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # 4. Setup Terraform CLI
+      #  Setup Terraform CLI
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: latest
 
-      # 5. Terraform Init
+      # Terraform Init
       - name: Terraform Init
         working-directory: 'terraform/01-main-infrastructure'
         run: |
@@ -64,7 +64,7 @@ jobs:
             -backend-config="container_name=tfstate" \
             -backend-config="key=game-api.terraform.tfstate"
 
-      # 6. Terraform Apply
+      # Terraform Apply
       - name: Terraform Apply
         working-directory: 'terraform/01-main-infrastructure'
         env:
