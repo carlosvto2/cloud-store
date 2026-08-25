@@ -1,0 +1,66 @@
+name: Build and Push Docker Images
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+env:
+  ACR_NAME: 'azurestoreacr'
+  PETSTOREPETSERVICE_IMAGE: 'petstorepetservice'
+
+jobs:
+  build-and-push:
+    name: Compile Docker Images and Push to ACR
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Dynamic authentication on Azure and Login in ACR
+      - name: Dynamic ACR Authentication via Azure CLI
+        env:
+          ARM_CLIENT_ID: ${{ vars.TF_VAR_AZURE_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+        run: |
+          az login --service-principal -u "${ARM_CLIENT_ID}" -p "${ARM_CLIENT_SECRET}" --tenant "${ARM_TENANT_ID}"
+          
+          ACR_ADMIN_PASSWORD=$(az acr credential show --name ${{ env.ACR_NAME }} --query "passwords[0].value" -o tsv)
+          
+          mkdir -p ~/.docker
+          echo '{"auths":{}}' > ~/.docker/config.json
+          
+          echo "$ACR_ADMIN_PASSWORD" | docker login ${{ env.ACR_NAME }}.azurecr.io -u ${{ env.ACR_NAME }} --password-stdin
+
+      # Build docker image
+      - name: Build Pet Store Pet Service Docker Image
+        run: |
+          docker build -t ${{ env.ACR_NAME }}.azurecr.io/${{ env.PETSTOREPETSERVICE_IMAGE }}:${{ github.sha }} \
+                       -t ${{ env.ACR_NAME }}.azurecr.io/${{ env.PETSTOREPETSERVICE_IMAGE }}:latest ./app/petstorepetservice
+
+      # Security Scan with Trivy
+      - name: Trivy Container Security Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ env.ACR_NAME }}.azurecr.io/${{ env.PETSTOREPETSERVICE_IMAGE }}:${{ github.sha }}'
+          format: 'sarif'
+          output: 'trivy-image-results.sarif'
+          exit-code: '0'
+          severity: 'HIGH,CRITICAL'
+
+      # Publish security report
+      - name: Upload Trivy scan results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-image-results.sarif'
+
+      # Push images to the Azure Container Registry
+      - name: Push Docker Images to ACR
+        run: |
+          docker push ${{ env.ACR_NAME }}.azurecr.io/${{ env.PETSTOREPETSERVICE_IMAGE }}:${{ github.sha }}
+          docker push ${{ env.ACR_NAME }}.azurecr.io/${{ env.PETSTOREPETSERVICE_IMAGE }}:latest
