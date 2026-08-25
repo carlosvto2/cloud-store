@@ -77,4 +77,4 @@ stages:
               workingDirectory: 'terraform/01-main-infrastructure'
               environmentServiceNameAzureRM: '$(azureSubscriptionConnection)'
               # Inject variables from pipeline to terraform
-              commandOptions: '-auto-approve -var="azure_client_id=$(TF_VAR_azure_client_id)" -var="azure_client_secret=$(TF_VAR_azure_client_secret)" -var="azure_devops_pat=$(TF_VAR_azure_devops_pat)" -var="azure_client_object_id=$(TF_VAR_azure_client_object_id)"'
+              commandOptions: '-auto-approve -var="azure_client_id=$(env.TF_VAR_azure_client_id)" -var="azure_client_secret=$(env.TF_VAR_azure_client_secret)" -var="azure_devops_pat=$(secrets.TF_VAR_azure_devops_pat)" -var="azure_client_object_id=$(secrets.TF_VAR_azure_client_object_id)"'
