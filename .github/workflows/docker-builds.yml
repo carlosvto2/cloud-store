@@ -10,6 +10,9 @@ permissions:
 env:
   ACR_NAME: 'azurestoreacr'
   PETSTOREPETSERVICE_IMAGE: 'petstorepetservice'
+  PETSTOREPRODUCTSERVICE_IMAGE: 'petstoreproductservice'
+  PETSTOREORDERSERVICE_IMAGE: 'petstoreorderservice'
+  PETSTOREAPP_IMAGE: 'petstoreapp'
 
 jobs:
   build-and-push:
@@ -41,12 +44,54 @@ jobs:
         run: |
           docker build -t ${{ env.ACR_NAME }}.azurecr.io/${{ env.PETSTOREPETSERVICE_IMAGE }}:${{ github.sha }} \
                        -t ${{ env.ACR_NAME }}.azurecr.io/${{ env.PETSTOREPETSERVICE_IMAGE }}:latest ./app/petstorepetservice
-
+      
       # Security Scan with Trivy
-      - name: Trivy Container Security Scan
+      - name: Trivy Pet Store Pet Service Container Security Scan
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: '${{ env.ACR_NAME }}.azurecr.io/${{ env.PETSTOREPETSERVICE_IMAGE }}:${{ github.sha }}'
+          format: 'sarif'
+          output: 'trivy-image-results.sarif'
+          exit-code: '0'
+          severity: 'HIGH,CRITICAL'
+
+      - name: Build Pet Store Product Service Docker Image
+        run: |
+          docker build -t ${{ env.ACR_NAME }}.azurecr.io/${{ env.PETSTOREPRODUCTSERVICE_IMAGE }}:${{ github.sha }} \
+                       -t ${{ env.ACR_NAME }}.azurecr.io/${{ env.PETSTOREPRODUCTSERVICE_IMAGE }}:latest ./app/petstoreproductservice
+      
+      - name: Trivy Pet Store Product Service Container Security Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ env.ACR_NAME }}.azurecr.io/${{ env.PETSTOREPRODUCTSERVICE_IMAGE }}:${{ github.sha }}'
+          format: 'sarif'
+          output: 'trivy-image-results.sarif'
+          exit-code: '0'
+          severity: 'HIGH,CRITICAL'
+      
+      - name: Build Pet Store Order Service Docker Image
+        run: |
+          docker build -t ${{ env.ACR_NAME }}.azurecr.io/${{ env.PETSTOREORDERSERVICE_IMAGE }}:${{ github.sha }} \
+                       -t ${{ env.ACR_NAME }}.azurecr.io/${{ env.PETSTOREORDERSERVICE_IMAGE }}:latest ./app/petstoreorderservice
+      
+      - name: Trivy Pet Store Order Service Container Security Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ env.ACR_NAME }}.azurecr.io/${{ env.PETSTOREORDERSERVICE_IMAGE }}:${{ github.sha }}'
+          format: 'sarif'
+          output: 'trivy-image-results.sarif'
+          exit-code: '0'
+          severity: 'HIGH,CRITICAL'
+
+      - name: Build Pet Store App Docker Image
+        run: |
+          docker build -t ${{ env.ACR_NAME }}.azurecr.io/${{ env.PETSTOREAPP_IMAGE }}:${{ github.sha }} \
+                       -t ${{ env.ACR_NAME }}.azurecr.io/${{ env.PETSTOREAPP_IMAGE }}:latest ./app/petstoreapp
+      
+      - name: Trivy Pet Store App Container Security Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ env.ACR_NAME }}.azurecr.io/${{ env.PETSTOREAPP_IMAGE }}:${{ github.sha }}'
           format: 'sarif'
           output: 'trivy-image-results.sarif'
           exit-code: '0'
@@ -64,3 +109,12 @@ jobs:
         run: |
           docker push ${{ env.ACR_NAME }}.azurecr.io/${{ env.PETSTOREPETSERVICE_IMAGE }}:${{ github.sha }}
           docker push ${{ env.ACR_NAME }}.azurecr.io/${{ env.PETSTOREPETSERVICE_IMAGE }}:latest
+
+          docker push ${{ env.ACR_NAME }}.azurecr.io/${{ env.PETSTOREPRODUCTSERVICE_IMAGE }}:${{ github.sha }}
+          docker push ${{ env.ACR_NAME }}.azurecr.io/${{ env.PETSTOREPRODUCTSERVICE_IMAGE }}:latest
+
+          docker push ${{ env.ACR_NAME }}.azurecr.io/${{ env.PETSTOREORDERSERVICE_IMAGE }}:${{ github.sha }}
+          docker push ${{ env.ACR_NAME }}.azurecr.io/${{ env.PETSTOREORDERSERVICE_IMAGE }}:latest
+
+          docker push ${{ env.ACR_NAME }}.azurecr.io/${{ env.PETSTOREAPP_IMAGE }}:${{ github.sha }}
+          docker push ${{ env.ACR_NAME }}.azurecr.io/${{ env.PETSTOREAPP_IMAGE }}:latest
