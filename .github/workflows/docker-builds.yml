@@ -24,8 +24,8 @@ jobs:
       - name: Dynamic ACR Authentication via Azure CLI
         env:
           ARM_CLIENT_ID: ${{ vars.TF_VAR_AZURE_CLIENT_ID }}
-          ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-          ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.TF_VAR_AZURE_CLIENT_SECRET }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
         run: |
           az login --service-principal -u "${ARM_CLIENT_ID}" -p "${ARM_CLIENT_SECRET}" --tenant "${ARM_TENANT_ID}"
           
@@ -54,7 +54,7 @@ jobs:
 
       # Publish security report
       - name: Upload Trivy scan results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: 'trivy-image-results.sarif'
