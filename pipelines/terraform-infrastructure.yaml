@@ -1,0 +1,80 @@
+trigger: none
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  # Azure DevOps Connections
+  azureSubscriptionConnection: 'sc-smartcity-connection'
+
+stages:
+  # =================================================================
+  # STAGE 1: INFRASTRUCTURE (Terraform)
+  # =================================================================
+  - stage: Infrastructure
+    displayName: 'Provision Infrastructure'
+    jobs:
+      - job: TerraformJob
+        displayName: Run Terraform Apply
+        steps:
+          # 1. DevSecOps: Scan the Terraform Code using Trivy + Generate report
+          - bash: |
+              echo "===> Installing Trivy..."
+              sudo apt-get install wget apt-transport-https gnupg lsb-release -y
+              wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
+              echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/trivy.list
+              sudo apt-get update -y && sudo apt-get install trivy -y
+            displayName: 'DevSecOps: Install Trivy'
+
+          # 2. Download junit template and execute scan
+          - bash: |
+              echo "===> Downloading JUnit template & scanning Terraform..."
+              curl -sSL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/junit.tpl -o junit.tpl
+
+              trivy config ./terraform/01-main-infrastructure \
+                --format template \
+                --template "@junit.tpl" \
+                -o trivy-iac-results.xml \
+                --exit-code 0 \
+                --skip-version-check \
+                --severity HIGH,CRITICAL
+            displayName: 'DevSecOps: Trivy IaC Security Scan'
+
+          # 2. Publish the security results in the Azure DevOps Interface
+          - task: PublishTestResults@2
+            displayName: 'Publish the Security IaC Report'
+            inputs:
+              testResultsFormat: 'JUnit'
+              testResultsFiles: 'trivy-iac-results.xml'
+              failTaskOnFailedTests: true # Pipeline fails if Trivy reported any vulneravility in the XML
+            condition: always() # Execute ALWAYS
+
+          # 2. Install the terraform tools
+          - task: TerraformInstaller@1
+            displayName: 'Install Terraform'
+            inputs:
+              terraformVersion: 'latest'
+
+          # 3. Inicialize Terraform connecting to the Storage Account to read .tfstate
+          - task: TerraformTaskV4@4
+            displayName: 'Terraform Init'
+            inputs:
+              provider: 'azurerm'
+              command: 'init'
+              workingDirectory: 'terraform/01-main-infrastructure'
+              backendServiceArm: '$(azureSubscriptionConnection)'
+              backendAzureRmResourceGroupName: 'game-infra-tfstate-rg'
+              backendAzureRmStorageAccountName: 'gametfstatestorage2026'
+              backendAzureRmContainerName: 'tfstate'
+              backendAzureRmKey: 'game-api.terraform.tfstate'
+
+          # 4. Apply the changes
+          - task: TerraformTaskV4@4
+            displayName: 'Terraform Apply'
+            inputs:
+              provider: 'azurerm'
+              command: 'apply'
+              workingDirectory: 'terraform/01-main-infrastructure'
+              environmentServiceNameAzureRM: '$(azureSubscriptionConnection)'
+              # Inject variables from pipeline to terraform
+              commandOptions: '-auto-approve -var="azure_client_id=$(TF_VAR_azure_client_id)" -var="azure_client_secret=$(TF_VAR_azure_client_secret)" -var="azure_devops_pat=$(TF_VAR_azure_devops_pat)" -var="azure_client_object_id=$(TF_VAR_azure_client_object_id)"'
