@@ -1,13 +1,21 @@
 name: Build and Push Docker Images
 
 on:
-  workflow_dispatch:
+  # Execute this workflow automatically when workflow is completed
+  workflow_run:
+    workflows: ["terraform-infrastructure"] # Name of the job
+    types:
+      - completed
+  
+  workflow_dispatch: # Allowance to execute it manually
 
 permissions:
   contents: read
   security-events: write
 
 env:
+  RG_GROUP_NAME: 'azurestore-rg'
+  APP_SERVICE_NAME: 'azurestore-app'
   ACR_NAME: 'azurestoreacr'
   PETSTOREPETSERVICE_IMAGE: 'petstorepetservice'
   PETSTOREPRODUCTSERVICE_IMAGE: 'petstoreproductservice'
@@ -118,3 +126,22 @@ jobs:
 
           docker push ${{ env.ACR_NAME }}.azurecr.io/${{ env.PETSTOREAPP_IMAGE }}:${{ github.sha }}
           docker push ${{ env.ACR_NAME }}.azurecr.io/${{ env.PETSTOREAPP_IMAGE }}:latest
+
+      # Automatic deployment of the imagen in the Azure App Service
+      - name: Deploy Container to Azure App Service
+        env:
+          ARM_CLIENT_ID: ${{ vars.TF_VAR_AZURE_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+        run: |
+          # Login into Azure CLI
+          az login --service-principal -u "${ARM_CLIENT_ID}" -p "${ARM_CLIENT_SECRET}" --tenant "${ARM_TENANT_ID}"
+          
+          # Configure the images and credentials in the App Service automatically
+          az webapp config container set \
+            --name "${{ env.APP_SERVICE_NAME }}"" \
+            --resource-group "${{ env.RG_GROUP_NAME }}" \
+            --container-image-name "${{ env.ACR_NAME }}.azurecr.io/${{ env.PETSTOREAPP_IMAGE }}:${{ github.sha }}" \
+            --container-registry-url "https://${{ env.ACR_NAME }}.azurecr.io" \
+            --container-registry-user "${{ env.ACR_NAME }}" \
+            --container-registry-password "$(az acr credential show --name ${{ env.ACR_NAME }} --query 'passwords[0].value' -o tsv)"
