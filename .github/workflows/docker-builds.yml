@@ -26,6 +26,13 @@ jobs:
   build-and-push:
     name: Compile Docker Images and Push to ACR
     runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      # Checkout the branch used for the previous Workflow
+      - name: Checkout branch from triggering workflow
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_branch || github.ref_name }}
 
     steps:
       - name: Checkout code
