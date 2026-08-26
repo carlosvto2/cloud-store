@@ -34,10 +34,6 @@ jobs:
         with:
           ref: ${{ github.event.workflow_run.head_branch || github.ref_name }}
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
       # Dynamic authentication on Azure and Login in ACR
       - name: Dynamic ACR Authentication via Azure CLI
         env:
@@ -54,7 +50,7 @@ jobs:
           
           echo "$ACR_ADMIN_PASSWORD" | docker login ${{ env.ACR_NAME }}.azurecr.io -u ${{ env.ACR_NAME }} --password-stdin
 
-      # Build docker image
+      # --- PET SERVICE ---
       - name: Build Pet Store Pet Service Docker Image
         run: |
           docker build -t ${{ env.ACR_NAME }}.azurecr.io/${{ env.PETSTOREPETSERVICE_IMAGE }}:${{ github.sha }} \
@@ -70,6 +66,7 @@ jobs:
           exit-code: '0'
           severity: 'HIGH,CRITICAL'
 
+      # --- PRODUCT SERVICE ---
       - name: Build Pet Store Product Service Docker Image
         run: |
           docker build -t ${{ env.ACR_NAME }}.azurecr.io/${{ env.PETSTOREPRODUCTSERVICE_IMAGE }}:${{ github.sha }} \
@@ -84,6 +81,7 @@ jobs:
           exit-code: '0'
           severity: 'HIGH,CRITICAL'
       
+      # --- ORDER SERVICE ---
       - name: Build Pet Store Order Service Docker Image
         run: |
           docker build -t ${{ env.ACR_NAME }}.azurecr.io/${{ env.PETSTOREORDERSERVICE_IMAGE }}:${{ github.sha }} \
@@ -98,6 +96,7 @@ jobs:
           exit-code: '0'
           severity: 'HIGH,CRITICAL'
 
+      # --- APP FRONTEND ---
       - name: Build Pet Store App Docker Image
         run: |
           docker build -t ${{ env.ACR_NAME }}.azurecr.io/${{ env.PETSTOREAPP_IMAGE }}:${{ github.sha }} \
