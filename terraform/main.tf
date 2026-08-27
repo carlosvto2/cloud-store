@@ -45,3 +45,47 @@ resource "azurerm_linux_web_app" "app" {
     "DOCKER_REGISTRY_SERVER_PASSWORD" = azurerm_container_registry.acr.admin_password
   }
 }
+
+# Azure Kubernetes Service (AKS)
+resource "azurerm_kubernetes_cluster" "aks" {
+  name                = "${var.prefix}-aks"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  dns_prefix          = "${var.prefix}-k8s"
+
+  role_based_access_control_enabled = true
+
+  default_node_pool {
+    name       = "default"
+    node_count = 1                  # Just 1 node to avoid wasting credits
+    vm_size    = "Standard_D2s_v3"
+    os_disk_size_gb  = 30
+    os_disk_type = "Ephemeral"
+  }
+
+  # Identity configuration needed for Kubernetes to work with Azure
+  identity {
+    type = "SystemAssigned"
+  }
+
+  # Deshabilitate expensive balancers 
+  network_profile {
+    network_plugin    = "kubenet"
+    load_balancer_sku = "standard"
+    network_policy    = "calico" # Net controller to intercept traffic and apply firewall rules at Pod level
+  }
+
+  tags = {
+    Environment = "Portfolio-Demo"
+  }
+
+  oidc_issuer_enabled = true
+}
+
+# Vinculate AKS with ACR so that Kubernetes can download the images in the registry
+resource "azurerm_role_assignment" "aks_to_acr" {
+  principal_id                     = azurerm_kubernetes_cluster.aks.kubelet_identity[0].object_id
+  role_definition_name             = "AcrPull"
+  scope                            = azurerm_container_registry.acr.id
+  skip_service_principal_aad_check = true
+}
