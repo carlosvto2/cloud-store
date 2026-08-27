@@ -3,7 +3,7 @@ name: Build and Push Docker Images
 on:
   # Execute this workflow automatically when workflow is completed
   workflow_run:
-    workflows: ["terraform-infrastructure"] # Name of the job
+    workflows: ["Provision Infrastructure"] # Name of the job
     types:
       - completed
   
