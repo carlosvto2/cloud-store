@@ -69,7 +69,7 @@ variable "patch_image" {
 
 variable "patch_tag" {
   type        = string
-  default     = "v1.1.0"
+  default     = "v1.1.1"
   description = "Webhook patch image Tag/Version"
 }
 
