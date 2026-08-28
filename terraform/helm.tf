@@ -57,8 +57,15 @@ resource "helm_release" "ingress_nginx" {
   ]
 
   # Force wait until all resources are ready (Load Balancer with IP)
-  wait          = true
-  timeout       = 600
+  wait            = true
+  timeout         = 600
+  cleanup_on_fail = true
+
+  # Deactivate temporarily the Webhook
+  set {
+    name  = "controller.admissionWebhooks.enabled"
+    value = "false"
+  }
 
   # Controller replicas for high availability
   set {
