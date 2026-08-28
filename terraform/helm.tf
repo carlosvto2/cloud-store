@@ -53,12 +53,13 @@ resource "helm_release" "ingress_nginx" {
   # Force to wait until the AKS is fully created and images imported
   depends_on = [
     azurerm_kubernetes_cluster.aks,
-    null_resource.import_ingress_images
+    null_resource.import_ingress_images,
+    time_sleep.wait_for_acr_role
   ]
 
   # Force wait until all resources are ready (Load Balancer with IP)
   wait            = true
-  timeout         = 600
+  timeout         = 900
   cleanup_on_fail = true
 
   # Deactivate temporarily the Webhook
