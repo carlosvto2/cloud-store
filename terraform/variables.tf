@@ -56,7 +56,7 @@ variable "controller_image" {
 
 variable "controller_tag" {
   type        = string
-  default     = "v1.0.4"
+  default     = "v1.10.0"
   description = "Ingress Controller image Tag/Version"
 }
 
@@ -69,7 +69,7 @@ variable "patch_image" {
 
 variable "patch_tag" {
   type        = string
-  default     = "v1.1.1"
+  default     = "v1.4.0"
   description = "Webhook patch image Tag/Version"
 }
 
