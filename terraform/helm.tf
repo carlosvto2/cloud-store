@@ -17,8 +17,11 @@ resource "helm_release" "ingress_nginx" {
   namespace        = var.ingress_namespace
   create_namespace = true
   
-  # Force to wait until the AKS is fully created
-  depends_on = [azurerm_kubernetes_cluster.aks]
+  # Force to wait until the AKS is fully created and images imported
+  depends_on = [
+    azurerm_kubernetes_cluster.aks,
+    null_resource.import_ingress_images
+  ]
 
   # Force wait until all resources are ready (Load Balancer with IP)
   wait          = true
@@ -36,7 +39,12 @@ resource "helm_release" "ingress_nginx" {
     value = "LoadBalancer"
   }
 
-  # Asure it runs on Linux nodes in AKS
+  # --------------------------------------------------------------------------------------
+  # Search through all the machines (nodes) that Azure has already started in the cluster,
+  # filter for those with the `kubernetes.io/os = linux` label, and place the NGINX 
+  # container there.
+  # --------------------------------------------------------------------------------------
+
   # Check the incoming requests and enroute them to the specific Pod
   set {
     name  = "controller.nodeSelector.kubernetes\\.io/os"
@@ -111,5 +119,29 @@ resource "helm_release" "ingress_nginx" {
   set {
     name  = "defaultBackend.image.digest"
     value = ""
+  }
+}
+
+# Import all 3 oficial images to ACR
+resource "null_resource" "import_ingress_images" {
+  depends_on = [azurerm_container_registry.acr]
+
+  provisioner "local-exec" {
+    command = <<EOT
+      az acr import --name ${azurerm_container_registry.acr.name} \
+        --source registry.k8s.io/ingress-nginx/controller:${var.controller_tag} \
+        --image ${var.controller_image}:${var.controller_tag} \
+        --force
+
+      az acr import --name ${azurerm_container_registry.acr.name} \
+        --source registry.k8s.io/ingress-nginx/kube-webhook-certgen:${var.patch_tag} \
+        --image ${var.patch_image}:${var.patch_tag} \
+        --force
+
+      az acr import --name ${azurerm_container_registry.acr.name} \
+        --source registry.k8s.io/defaultbackend-amd64:${var.defaultbackend_tag} \
+        --image ${var.defaultbackend_image}:${var.defaultbackend_tag} \
+        --force
+    EOT
   }
 }
