@@ -50,7 +50,7 @@ variable "use_custom_acr" {
 # Controller
 variable "controller_image" {
   type        = string
-  default     = "ingress-nginx/controller"
+  default     = "controller"
   description = "Ingress Controller Image route in ACR"
 }
 
@@ -60,10 +60,9 @@ variable "controller_tag" {
   description = "Ingress Controller image Tag/Version"
 }
 
-# Webhook Patch (Admission Webhooks)
 variable "patch_image" {
   type        = string
-  default     = "ingress-nginx/kube-webhook-certgen"
+  default     = "kube-webhook-certgen"
   description = "Webhook patch Image route in ACR"
 }
 
