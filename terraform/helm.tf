@@ -8,6 +8,39 @@ provider "helm" {
   }
 }
 
+# Wait 60 seconds to asure Azure propagates the rol AcrPull
+resource "time_sleep" "wait_for_acr_role" {
+  depends_on = [azurerm_role_assignment.aks_to_acr]
+
+  create_duration = "60s"
+}
+
+# Import all 3 oficial images to ACR
+resource "null_resource" "import_ingress_images" {
+  depends_on = [azurerm_container_registry.acr]
+
+  provisioner "local-exec" {
+    command = <<EOT
+      az acr import --name ${azurerm_container_registry.acr.name} \
+        --source registry.k8s.io/ingress-nginx/controller:${var.controller_tag} \
+        --image ${var.controller_image}:${var.controller_tag} \
+        --force
+
+      az acr import --name ${azurerm_container_registry.acr.name} \
+        --source registry.k8s.io/ingress-nginx/kube-webhook-certgen:${var.patch_tag} \
+        --image ${var.patch_image}:${var.patch_tag} \
+        --force
+
+      az acr import --name ${azurerm_container_registry.acr.name} \
+        --source registry.k8s.io/defaultbackend-amd64:${var.defaultbackend_tag} \
+        --image ${var.defaultbackend_image}:${var.defaultbackend_tag} \
+        --force
+    EOT
+  }
+}
+
+
+
 # Helm resource to install NGINX Ingress Controller
 resource "helm_release" "ingress_nginx" {
   name             = "ingress-nginx"
@@ -119,29 +152,5 @@ resource "helm_release" "ingress_nginx" {
   set {
     name  = "defaultBackend.image.digest"
     value = ""
-  }
-}
-
-# Import all 3 oficial images to ACR
-resource "null_resource" "import_ingress_images" {
-  depends_on = [azurerm_container_registry.acr]
-
-  provisioner "local-exec" {
-    command = <<EOT
-      az acr import --name ${azurerm_container_registry.acr.name} \
-        --source registry.k8s.io/ingress-nginx/controller:${var.controller_tag} \
-        --image ${var.controller_image}:${var.controller_tag} \
-        --force
-
-      az acr import --name ${azurerm_container_registry.acr.name} \
-        --source registry.k8s.io/ingress-nginx/kube-webhook-certgen:${var.patch_tag} \
-        --image ${var.patch_image}:${var.patch_tag} \
-        --force
-
-      az acr import --name ${azurerm_container_registry.acr.name} \
-        --source registry.k8s.io/defaultbackend-amd64:${var.defaultbackend_tag} \
-        --image ${var.defaultbackend_image}:${var.defaultbackend_tag} \
-        --force
-    EOT
   }
 }
