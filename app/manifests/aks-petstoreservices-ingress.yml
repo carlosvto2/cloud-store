@@ -16,6 +16,7 @@ kind: Ingress
 metadata:
   name: ingress-petstoreservices
   annotations:
+    # ($1) captures the base path segment/trailing slash | ($2) captures the rest of the path (e.g., v2/pet/info)
     nginx.ingress.kubernetes.io/rewrite-target: /$2
     nginx.ingress.kubernetes.io/use-regex: "true"
 spec:

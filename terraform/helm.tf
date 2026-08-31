@@ -97,12 +97,6 @@ resource "helm_release" "ingress_nginx" {
     value = "true"
   }
 
-  # Forces the Load Balancer service annotations for Azure AKS
-  set {
-    name  = "controller.service.annotations.service\\.beta\\.kubernetes\\.io/azure-load-balancer-health-probe-request-path"
-    value = "/healthz"
-  }
-
   # --------------------------------------------------------------------------------------
   # Search through all the machines (nodes) that Azure has already started in the cluster,
   # filter for those with the `kubernetes.io/os = linux` label, and place the NGINX 
