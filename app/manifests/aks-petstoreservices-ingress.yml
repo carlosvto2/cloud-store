@@ -16,9 +16,8 @@ kind: Ingress
 metadata:
   name: ingress-petstoreservices
   annotations:
-    # Indica que NGINX (instalado por Helm) procesará este Ingress
-    kubernetes.io/ingress.class: nginx
-nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/use-regex: "true"
 spec:
   ingressClassName: nginx
   rules:
