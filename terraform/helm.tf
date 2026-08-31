@@ -53,7 +53,6 @@ resource "helm_release" "ingress_nginx" {
   # Force to wait until AKS is fully created and images are imported
   depends_on = [
     azurerm_kubernetes_cluster.aks,
-    null_resource.import_ingress_images,
     time_sleep.wait_for_acr_role
   ]
 
@@ -78,6 +77,18 @@ resource "helm_release" "ingress_nginx" {
   set {
     name  = "controller.service.type"
     value = "LoadBalancer"
+  }
+
+  # Forces Azure to provision a PUBLIC Load Balancer (not internal)
+  set {
+    name  = "controller.service.annotations.service\\.beta\\.kubernetes\\.io/azure-load-balancer-internal"
+    value = "false"
+  }
+
+  # Forces Standard SKU for Public IP in AKS
+  set {
+    name  = "controller.service.annotations.service\\.beta\\.kubernetes\\.io/azure-load-balancer-sku"
+    value = "standard"
   }
 
   # Allows Azure to route traffic through any node in the cluster
