@@ -71,13 +71,36 @@ resource "helm_release" "ingress_nginx" {
   # Controller replicas for high availability
   set {
     name  = "controller.replicaCount"
-    value = "2"
+    value = "1"
   }
 
   # Configure the controller service to request for a public IP to Azure
   set {
     name  = "controller.service.type"
     value = "LoadBalancer"
+  }
+
+  # Allows Azure to route traffic through any node in the cluster (prevents probe failures)
+  set {
+    name  = "controller.service.externalTrafficPolicy"
+    value = "Cluster"
+  }
+
+  # Explicitly specify the default Ingress class
+  set {
+    name  = "controller.ingressClassResource.name"
+    value = "nginx"
+  }
+
+  set {
+    name  = "controller.ingressClassResource.isDefaultClass"
+    value = "true"
+  }
+
+  # Forces the Load Balancer service annotations for Azure AKS
+  set {
+    name  = "controller.service.annotations.service\\.beta\\.kubernetes\\.io/azure-load-balancer-health-probe-request-path"
+    value = "/healthz"
   }
 
   # --------------------------------------------------------------------------------------
