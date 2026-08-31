@@ -1,0 +1,80 @@
+# ==============================================================================
+# RESOURCE: Ingress (Web Traffic Router / Reverse Proxy)
+# ------------------------------------------------------------------------------
+# PURPOSE:
+# Exposes the Petstore microservices to the internet through a single public IP.
+# The NGINX Ingress Controller evaluates these rules to route incoming HTTP 
+# traffic to the corresponding internal Kubernetes Service based on the path.
+#
+# ROUTING MAP:
+# - http://<PUBLIC-IP>/petstorepetservice    -> aks-petstorepetservice:80
+# - http://<PUBLIC-IP>/petstoreproductservice -> aks-petstoreproductservice:80
+# - http://<PUBLIC-IP>/petstoreorderservice  -> aks-petstoreorderservice:80
+# ==============================================================================
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-petstoreservices
+  annotations:
+    # Indica que NGINX (instalado por Helm) procesará este Ingress
+    kubernetes.io/ingress.class: nginx
+spec:
+  rules:
+  - http:
+      paths:
+      # Microservicio de Mascotas
+      - path: /petstorepetservice
+        pathType: Prefix
+        backend:
+          service:
+            name: aks-petstorepetservice
+            port:
+              number: 80
+      # Microservicio de Productos
+      - path: /petstoreproductservice
+        pathType: Prefix
+        backend:
+          service:
+            name: aks-petstoreproductservice
+            port:
+              number: 80
+      # Microservicio de Pedidos
+      - path: /petstoreorderservice
+        pathType: Prefix
+        backend:
+          service:
+            name: aks-petstoreorderservice
+            port:
+              number: 80
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-petstoreservices
+  annotations:
+    kubernetes.io/ingress.class: nginx
+spec:
+  rules:
+  - http:
+      paths:
+      # if path "petstorepetservice" send it to microservice "aks-petstorepetservice" port 80
+      - path: /petstorepetservice
+        pathType: Prefix
+        backend:
+          service:
+            name: aks-petstorepetservice
+            port:
+              number: 80
+      - path: /petstoreproductservice
+        pathType: Prefix
+        backend:
+          service:
+            name: aks-petstoreproductservice
+            port:
+              number: 80
+      - path: /petstoreorderservice
+        pathType: Prefix
+        backend:
+          service:
+            name: aks-petstoreorderservice
+            port:
+              number: 80

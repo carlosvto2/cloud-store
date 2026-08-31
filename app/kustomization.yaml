@@ -7,3 +7,4 @@ resources:
   - petstorepetservice/aks-petstorepetservice.yml
   - petstoreproductservice/aks-petstoreproductservice.yml
   - petstoreorderservice/aks-petstoreorderservice.yml
+  - manifests/aks-petstoreservices-ingress.yml
