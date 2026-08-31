@@ -137,7 +137,7 @@ jobs:
       - name: Deploy Container to Azure App Service
         env:
           ARM_CLIENT_ID: ${{ vars.TF_VAR_AZURE_CLIENT_ID }}
-          ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          ARM_CLIENT_SECRET: ${{ secrets.TF_VAR_AZURE_CLIENT_SECRET }}
           ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
         run: |
           # Login into Azure CLI
@@ -145,7 +145,7 @@ jobs:
           
           # Configure the images and credentials in the App Service automatically
           az webapp config container set \
-            --name "${{ env.APP_SERVICE_NAME }}"" \
+            --name "${{ env.APP_SERVICE_NAME }}" \
             --resource-group "${{ env.RG_GROUP_NAME }}" \
             --container-image-name "${{ env.ACR_NAME }}.azurecr.io/${{ env.PETSTOREAPP_IMAGE }}:${{ github.sha }}" \
             --container-registry-url "https://${{ env.ACR_NAME }}.azurecr.io" \
