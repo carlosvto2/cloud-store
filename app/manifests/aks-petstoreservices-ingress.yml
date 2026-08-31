@@ -18,30 +18,28 @@ metadata:
   annotations:
     # Indica que NGINX (instalado por Helm) procesará este Ingress
     kubernetes.io/ingress.class: nginx
+nginx.ingress.kubernetes.io/rewrite-target: /$2
 spec:
   ingressClassName: nginx
   rules:
   - http:
       paths:
-      # Microservicio de Mascotas
-      - path: /petstorepetservice
-        pathType: Prefix
+      - path: /petstorepetservice(/|$)(.*)
+        pathType: ImplementationSpecific
         backend:
           service:
             name: aks-petstorepetservice
             port:
               number: 80
-      # Microservicio de Productos
-      - path: /petstoreproductservice
-        pathType: Prefix
+      - path: /petstoreproductservice(/|$)(.*)
+        pathType: ImplementationSpecific
         backend:
           service:
             name: aks-petstoreproductservice
             port:
               number: 80
-      # Microservicio de Pedidos
-      - path: /petstoreorderservice
-        pathType: Prefix
+      - path: /petstoreorderservice(/|$)(.*)
+        pathType: ImplementationSpecific
         backend:
           service:
             name: aks-petstoreorderservice
