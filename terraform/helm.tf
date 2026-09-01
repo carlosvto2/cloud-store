@@ -92,10 +92,16 @@ resource "helm_release" "ingress_nginx" {
     value = "standard"
   }
 
-  # Vincula dinámicamente la IP pública creada por Terraform a la release de Helm
+  # Bind the dedicated Public IP resource name created by Terraform
   set {
-    name  = "controller.service.loadBalancerIP"
-    value = azurerm_public_ip.ingress_pip.ip_address
+    name  = "controller.service.annotations.service\\.beta\\.kubernetes\\.io/azure-pip-name"
+    value = azurerm_public_ip.ingress_pip.name
+  }
+
+  # Specify the resource group where the PIP resides (the MC_ node resource group)
+  set {
+    name  = "controller.service.annotations.service\\.beta\\.kubernetes\\.io/azure-load-balancer-resource-group"
+    value = azurerm_kubernetes_cluster.aks.node_resource_group
   }
 
   # Allows Azure to route traffic through any node in the cluster
