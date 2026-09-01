@@ -50,9 +50,10 @@ resource "helm_release" "ingress_nginx" {
   namespace        = var.ingress_namespace
   create_namespace = true
 
-  # Force to wait until AKS is fully created and images are imported
+  # Force to wait until AKS is fully created, public ip created and images are imported
   depends_on = [
     azurerm_kubernetes_cluster.aks,
+    azurerm_public_ip.ingress_pip,
     time_sleep.wait_for_acr_role
   ]
 
@@ -89,6 +90,12 @@ resource "helm_release" "ingress_nginx" {
   set {
     name  = "controller.service.annotations.service\\.beta\\.kubernetes\\.io/azure-load-balancer-sku"
     value = "standard"
+  }
+
+  # Vincula dinámicamente la IP pública creada por Terraform a la release de Helm
+  set {
+    name  = "controller.service.loadBalancerIP"
+    value = azurerm_public_ip.ingress_pip.ip_address
   }
 
   # Allows Azure to route traffic through any node in the cluster

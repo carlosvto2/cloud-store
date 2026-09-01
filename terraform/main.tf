@@ -103,6 +103,19 @@ resource "azurerm_role_assignment" "aks_to_acr" {
   skip_service_principal_aad_check = true
 }
 
+# Dedicated Public IP for NGINX Ingress Controller to route external traffic into AKS
+resource "azurerm_public_ip" "ingress_pip" {
+  name                = "pip-ingress-nginx"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_kubernetes_cluster.aks.node_resource_group
+  allocation_method   = "Static"
+  sku                 = "Standard"
+
+  tags = {
+    environment = "Portfolio-Demo"
+  }
+}
+
 # Execute the manifests in kustomization
 data "kustomization_build" "petstore" {
   path = "${path.module}/../app"
