@@ -1,0 +1,47 @@
+# ==============================================================================
+# RESOURCE: Ingress (Web Traffic Router / Reverse Proxy)
+# ------------------------------------------------------------------------------
+# PURPOSE:
+# Exposes the Petstore microservices to the internet through a single public IP.
+# The NGINX Ingress Controller evaluates these rules to route incoming HTTP 
+# traffic to the corresponding internal Kubernetes Service based on the path.
+#
+# ROUTING MAP:
+# - http://<PUBLIC-IP>/petstorepetservice    -> aks-petstorepetservice:80
+# - http://<PUBLIC-IP>/petstoreproductservice -> aks-petstoreproductservice:80
+# - http://<PUBLIC-IP>/petstoreorderservice  -> aks-petstoreorderservice:80
+# ==============================================================================
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-petstoreservices
+  annotations:
+    # ($1) captures the base path segment/trailing slash | ($2) captures the rest of the path (e.g., v2/pet/info)
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+  - http:
+      paths:
+      - path: /petstorepetservice(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aks-petstorepetservice
+            port:
+              number: 80
+      - path: /petstoreproductservice(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aks-petstoreproductservice
+            port:
+              number: 80
+      - path: /petstoreorderservice(/|$)(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: aks-petstoreorderservice
+            port:
+              number: 80

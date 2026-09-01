@@ -49,11 +49,10 @@ resource "helm_release" "ingress_nginx" {
   version          = "4.10.0"
   namespace        = var.ingress_namespace
   create_namespace = true
-  
-  # Force to wait until the AKS is fully created and images imported
+
+  # Force to wait until AKS is fully created and images are imported
   depends_on = [
     azurerm_kubernetes_cluster.aks,
-    null_resource.import_ingress_images,
     time_sleep.wait_for_acr_role
   ]
 
@@ -71,41 +70,65 @@ resource "helm_release" "ingress_nginx" {
   # Controller replicas for high availability
   set {
     name  = "controller.replicaCount"
-    value = "2"
+    value = "1"
   }
 
-  # Configure the controller service to request for a public IP to Azure
+  # Configure the controller service to request a public LoadBalancer from Azure
   set {
     name  = "controller.service.type"
     value = "LoadBalancer"
   }
 
+  # Forces Azure to provision a PUBLIC Load Balancer (not internal)
+  set {
+    name  = "controller.service.annotations.service\\.beta\\.kubernetes\\.io/azure-load-balancer-internal"
+    value = "false"
+  }
+
+  # Forces Standard SKU for Public IP in AKS
+  set {
+    name  = "controller.service.annotations.service\\.beta\\.kubernetes\\.io/azure-load-balancer-sku"
+    value = "standard"
+  }
+
+  # Allows Azure to route traffic through any node in the cluster
+  set {
+    name  = "controller.service.externalTrafficPolicy"
+    value = "Cluster"
+  }
+
+  # Explicitly specify the default Ingress class
+  set {
+    name  = "controller.ingressClassResource.name"
+    value = "nginx"
+  }
+
+  set {
+    name  = "controller.ingressClassResource.isDefaultClass"
+    value = "true"
+  }
+
   # --------------------------------------------------------------------------------------
-  # Search through all the machines (nodes) that Azure has already started in the cluster,
-  # filter for those with the `kubernetes.io/os = linux` label, and place the NGINX 
-  # container there.
+  # Node Selectors (Linux)
   # --------------------------------------------------------------------------------------
 
-  # Check the incoming requests and enroute them to the specific Pod
   set {
     name  = "controller.nodeSelector.kubernetes\\.io/os"
     value = "linux"
   }
 
-  # Handle incorrect requests 
   set {
     name  = "defaultBackend.nodeSelector.kubernetes\\.io/os"
     value = "linux"
   }
 
-  # Execute to check Yaml sintax and secure connection
   set {
     name  = "controller.admissionWebhooks.patch.nodeSelector.kubernetes\\.io/os"
     value = "linux"
   }
 
   # -----------------------------------------------------------------
-  # Redirection to our private ACR (Images previously imported in the pipeline)
+  # Private ACR Images
   # -----------------------------------------------------------------
 
   # Controller Image
@@ -126,7 +149,7 @@ resource "helm_release" "ingress_nginx" {
     value = ""
   }
 
-  # 2. Webhook Patch Image
+  # Webhook Patch Image
   set {
     name  = "controller.admissionWebhooks.patch.image.registry"
     value = azurerm_container_registry.acr.login_server
@@ -144,7 +167,7 @@ resource "helm_release" "ingress_nginx" {
     value = ""
   }
 
-  # 3. Default Backend Image
+  # Default Backend Image
   set {
     name  = "defaultBackend.image.registry"
     value = azurerm_container_registry.acr.login_server

@@ -1,0 +1,10 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: ingress-basic
+
+resources:
+  - petstorepetservice/aks-petstorepetservice.yml
+  - petstoreproductservice/aks-petstoreproductservice.yml
+  - petstoreorderservice/aks-petstoreorderservice.yml
+  - manifests/aks-petstoreservices-ingress.yml

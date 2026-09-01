@@ -9,6 +9,10 @@ terraform {
       source  = "hashicorp/helm"
       version = "~> 2.12"
     }
+    kustomization = {
+      source  = "kbst/kustomization"
+      version = ">= 0.9.0"
+    }
   }
   backend "azurerm" {
     resource_group_name  = "game-infra-tfstate-rg"
@@ -20,4 +24,8 @@ terraform {
 
 provider "azurerm" {
   features {}
+}
+
+provider "kustomization" {
+  kubeconfig_raw = azurerm_kubernetes_cluster.aks.kube_config_raw
 }

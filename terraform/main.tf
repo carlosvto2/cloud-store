@@ -82,10 +82,38 @@ resource "azurerm_kubernetes_cluster" "aks" {
   oidc_issuer_enabled = true
 }
 
+# Add a new pool to the cluster to deploy the petstore services 
+# (3 new virtual machines to the cluster with the name petstorenp2)
+resource "azurerm_kubernetes_cluster_node_pool" "petstore_pool" {
+  name                  = "petstorenp2"
+  kubernetes_cluster_id = azurerm_kubernetes_cluster.aks.id
+  vm_size               = "Standard_D2s_v3"
+  node_count            = 3
+
+  node_labels = {
+    "agentpool" = "petstorenp2"
+  }
+}
+
 # Vinculate AKS with ACR so that Kubernetes can download the images in the registry
 resource "azurerm_role_assignment" "aks_to_acr" {
   principal_id                     = azurerm_kubernetes_cluster.aks.kubelet_identity[0].object_id
   role_definition_name             = "AcrPull"
   scope                            = azurerm_container_registry.acr.id
   skip_service_principal_aad_check = true
+}
+
+# Execute the manifests in kustomization
+data "kustomization_build" "petstore" {
+  path = "${path.module}/../app"
+}
+
+resource "kustomization_resource" "petstore_app" {
+  for_each = data.kustomization_build.petstore.ids
+  manifest = data.kustomization_build.petstore.manifests[each.value]
+
+  depends_on = [
+    azurerm_kubernetes_cluster.aks,
+    helm_release.ingress_nginx
+  ]
 }
