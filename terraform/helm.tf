@@ -133,10 +133,9 @@ resource "helm_release" "ingress_nginx" {
     value = "true"
   }
 
-  # Allow the NSG rules to cover the entrance to the NodePorts of the clúster
   set {
-    name  = "controller.service.annotations.service\\.beta\\.kubernetes\\.io/azure-allowed-service-tags"
-    value = "Internet"
+    name  = "controller.nodeSelector.agentpool"
+    value = "petstorenp2"
   }
 
   # --------------------------------------------------------------------------------------
