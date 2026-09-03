@@ -133,6 +133,7 @@ resource "kustomization_resource" "petstore_app" {
 
 # Obtener el NSG creado automáticamente por AKS en el grupo de nodos
 data "azurerm_resources" "aks_nsg" {
+  depends_on          = [azurerm_kubernetes_cluster.aks]
   resource_group_name = azurerm_kubernetes_cluster.aks.node_resource_group
   type                = "Microsoft.Network/networkSecurityGroups"
 }

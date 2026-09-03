@@ -53,8 +53,10 @@ resource "helm_release" "ingress_nginx" {
   # Force to wait until AKS is fully created, public ip created and images are imported
   depends_on = [
     azurerm_kubernetes_cluster.aks,
+    azurerm_kubernetes_cluster_node_pool.petstore_pool,
     azurerm_public_ip.ingress_pip,
-    time_sleep.wait_for_acr_role
+    time_sleep.wait_for_acr_role,
+    null_resource.import_ingress_images
   ]
 
   # Force wait until all resources are ready (Load Balancer with IP)
