@@ -104,6 +104,12 @@ resource "helm_release" "ingress_nginx" {
     value = azurerm_kubernetes_cluster.aks.node_resource_group
   }
 
+  # Specify the correct health endpoint of NGINX for the Azure Load Balancer
+  set {
+    name  = "controller.service.annotations.service\\.beta\\.kubernetes\\.io/azure-load-balancer-health-probe-request-path"
+    value = "/healthz"
+  }
+
   # Allows Azure to route traffic through any node in the cluster
   set {
     name  = "controller.service.externalTrafficPolicy"
