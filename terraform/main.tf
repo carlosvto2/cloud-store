@@ -130,3 +130,24 @@ resource "kustomization_resource" "petstore_app" {
     helm_release.ingress_nginx
   ]
 }
+
+# Obtener el NSG creado automáticamente por AKS en el grupo de nodos
+data "azurerm_resources" "aks_nsg" {
+  resource_group_name = azurerm_kubernetes_cluster.aks.node_resource_group
+  type                = "Microsoft.Network/networkSecurityGroups"
+}
+
+# Permitir que las Health Probes de Azure lleguen a los NodePorts de los nodos
+resource "azurerm_network_security_rule" "allow_azure_health_probes" {
+  name                        = "Allow-Azure-HealthProbes-NodePorts"
+  priority                    = 105
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_port_range           = "*"
+  destination_port_range      = "30000-32767"
+  source_address_prefix       = "AzureLoadBalancer"
+  destination_address_prefix  = "*"
+  resource_group_name         = azurerm_kubernetes_cluster.aks.node_resource_group
+  network_security_group_name = split("/", data.azurerm_resources.aks_nsg.resources[0].id)[8]
+}
