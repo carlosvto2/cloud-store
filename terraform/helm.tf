@@ -82,11 +82,6 @@ resource "helm_release" "ingress_nginx" {
     value = "LoadBalancer"
   }
 
-  set {
-    name  = "controller.service.loadBalancerIP"
-    value = azurerm_public_ip.ingress_pip.ip_address
-  }
-
   # Forces Azure to provision a PUBLIC Load Balancer (not internal)
   set {
     name  = "controller.service.annotations.service\\.beta\\.kubernetes\\.io/azure-load-balancer-internal"
