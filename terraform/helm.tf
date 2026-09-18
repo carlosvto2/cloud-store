@@ -123,6 +123,11 @@ resource "helm_release" "ingress_nginx" {
     value = "10254"
   }
 
+  set {
+    name  = "controller.service.annotations.service\\.beta\\.kubernetes\\.io/azure-load-balancer-health-probe-protocol"
+    value = "Http"
+  }
+
   # Allows Azure to route traffic through any node in the cluster
   set {
     name  = "controller.service.externalTrafficPolicy"
