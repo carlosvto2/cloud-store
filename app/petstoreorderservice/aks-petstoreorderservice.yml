@@ -26,6 +26,7 @@ kind: Service
 metadata:
   name: aks-petstoreorderservice 
 spec:
+  # Create internal virtual IP inside of the Cluster to send traffic to the POD
   type: ClusterIP
   ports:
   - port: 80
