@@ -114,19 +114,13 @@ resource "helm_release" "ingress_nginx" {
   # Specify the correct health endpoint of NGINX for the Azure Load Balancer
   set {
     name  = "controller.service.annotations.service\\.beta\\.kubernetes\\.io/azure-load-balancer-health-probe-request-path"
-    value = ""
+    value = "/healthz"
   }
 
-  # Use TCP as protocol for health to avoid Azure LB dropping public traffic
+  # Dedicated port for health/metrics of NGINX
   set {
-    name  = "controller.service.annotations.service\\.beta\\.kubernetes\\.io/azure-load-balancer-health-probe-protocol"
-    value = "Tcp"
-  }
-
-  # Use HTTP as protocol for health
-  set {
-    name  = "controller.service.annotations.service\\.beta\\.kubernetes\\.io/azure-load-balancer-health-probe-protocol"
-    value = "Http"
+    name  = "controller.service.annotations.service\\.beta\\.kubernetes\\.io/azure-load-balancer-health-probe-port"
+    value = "10254"
   }
 
   # Allows Azure to route traffic through any node in the cluster
